@@ -32,37 +32,31 @@ var userPMchatroomArray = [];
 var userLocations = [];
  
  //Get list of chatrooms
- //Logging in AKA Quick method of sending the current username to server
+ //Logging in (Quick method of sending the current username to server)
  //Change chatrooms
  //Create chatroom
  //Ban someone specific
  
  
-// Do the Socket.IO magic:
 var io = socketio.listen(app);
 io.sockets.on("connection", function(socket){
 	// This callback runs when a new Socket.IO connection is established.
 	socket.currentUsername ="";
 	socket.currentRoom = default_chatroom.name;
-	//socket.join("default_chatroom");
-	//socket.join(default_chatroom.name);
 	socket.join("default_chatroom");
-	socket.currentRoom = "default_chatroom";//.name;
-	//chatroomArray.push(default_chatroom);
+	socket.currentRoom = "default_chatroom";
 	
 	//Update
 	broadcastChatrooms();
 	broadcastUsernames();
 	function broadcastChatrooms() {
-		var stringToSend = "";//"numberOfChatrooms="+chatroomArray.length+" ";
+		var stringToSend = "";
 		for (i=0; i<chatroomArray.length; i++) {
 			stringToSend+=String(chatroomArray[i].name);
 			if (i!=chatroomArray.length-1) {
 				stringToSend+="~~~&#";
 			}
 		}
-		//io.to(socket.currentRoom).emit("message_to_client",{message: "CHATROOM UPDATE "+stringToSend}); // broadcast the message to other users
-		//io.to(socket.currentRoom).emit("message_to_client",{message: "Chatroom_Update: "+stringToSend}); // broadcast the message to other users
 		io.emit("chatrooms_updated",{message:stringToSend});
 	}
 	function broadcastUsernames() {
@@ -73,8 +67,6 @@ io.sockets.on("connection", function(socket){
 				stringToSend+="~~~&#";
 			}
 		}
-		//io.to(socket.currentRoom).emit("message_to_client",{message: "CHATROOM UPDATE "+stringToSend}); // broadcast the message to other users
-		//io.to(socket.currentRoom).emit("message_to_client",{message: "Chatroom_Update: "+stringToSend}); // broadcast the message to other users
 		io.emit("usernames_updated",{message:stringToSend});
 	}
 	
@@ -99,7 +91,6 @@ io.sockets.on("connection", function(socket){
 	});
 	
 	socket.on('new_chatroom', function(data){
-		//var numberO fChatrooms
 		if (findRoom(data.roomname)!=null && findPMRoom(data.roomname)!=null) {
 			io.to(socket.currentUsername).emit("error_message",{message: "Chatroom "+data.roomname+ " already exists."});
 		} else {
@@ -248,8 +239,6 @@ io.sockets.on("connection", function(socket){
 			io.to(socket.currentUsername).emit("message_to_client",{message: "You have kicked "+data.target+" out from your room "+socket.currentRoom});
 			io.to(data.target).emit("message_to_client",{message: stringToSend});
 			io.to(data.target).emit("message_to_client",{message: "You have been moved to "+setLocation(data.target, "default_chatroom")});
-			//I"m not typing setLocation here because that method already completed
-			//when I sent the message (in the 2nd emit I made)
 		} else {
 			io.to(socket.currentUsername).emit("error_message",{message: "You can't kick someone from a chatroom you didn't create."});
 		}
@@ -272,8 +261,6 @@ io.sockets.on("connection", function(socket){
 			io.to(socket.currentUsername).emit("message_to_client",{message: "You have banned "+data.target+" from your room "+socket.currentRoom});
 			io.to(data.target).emit("message_to_client",{message: stringToSend});
 			io.to(data.target).emit("message_to_client",{message: "You have been moved to "+setLocation(data.target, "default_chatroom")});
-			//I"m not typing setLocation here because that method already completed
-			//when I sent the message (in the 2nd emit I made)
 		} else {
 			io.to(socket.currentUsername).emit("error_message",{message: "You can't ban someone from a chatroom you didn't create."});
 		}

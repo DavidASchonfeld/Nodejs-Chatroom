@@ -19,11 +19,9 @@
           
         
          var messageReceived = String(data['message']);
-         //alert("messageReceived: "+messageReceived);
          
          if (pic_regex.test(messageReceived)) {
             messageReceived = messageReceived.replace(pic_regex, '<img src="$&" alt="Picture not found">');
-            //messageReceived = messageReceived.replace(pic_regex, '[Source was: $&. Image: <img src="$&" alt="Picture not found">]');
          } else if (URL_regex_without_http.test(messageReceived)) {
             messageReceived = messageReceived.replace(URL_regex_without_http, '<a href="http://$&">$&</a>');
          }
@@ -75,7 +73,6 @@
       });
       
       socketio.on("chatrooms_updated",function(data){
-         //alert(data);
          var chatroomArrayNames = data['message'].split("~~~&#");
          var theMenu = document.getElementById("menu");
          while (theMenu.firstChild){
@@ -88,14 +85,12 @@
             newListItem.setAttribute("class","ui-state-disabled");
             document.getElementById("menu").appendChild(newListItem);
             newListItem.addEventListener("click", function(){
-               //alert("this.id for this menu item="+this.id);
                switchChatroom(this.id);
             }, false);
          }
       });
       
       socketio.on("usernames_updated",function(data){
-         //alert(data);
          var usernames = data['message'].split("~~~&#");
          var theMenu = document.getElementById("menu_2");
          while (theMenu.firstChild){
@@ -108,7 +103,6 @@
             newListItem.setAttribute("class","ui-state-disabled");
             document.getElementById("menu_2").appendChild(newListItem);
             newListItem.addEventListener("click", function(){
-               //alert("this.id for this menu item="+this.id);
                targetUser = this.id;
                document.getElementById("pmMessage").placeholder = "Target: " + targetUser;
             }, false);
@@ -171,12 +165,6 @@
   <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.3/jquery.min.js"></script>
   <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/jquery-ui.min.js"></script>
 
-  <!--Below is resources for jQuery Menu
-   <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
-  <script src="//code.jquery.com/jquery-1.10.2.js"></script>
-  <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
-  <link rel="stylesheet" href="/resources/demos/style.css">
-   Below is resources for jQuery Menu -->
   
       <title>Chatroom Window</title>
    </head>
@@ -237,7 +225,6 @@
          $(function() {
             $( "#menu_2" ).menu();
          });
-         //document.getElementById("message_input").addEventListener()
          function enterPage(){
             var usernameInput = document.getElementById("usernameId").value;
             if (usernameInput=="") {
