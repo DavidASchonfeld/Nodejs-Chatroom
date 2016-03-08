@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <script src="/socket.io/socket.io.js"></script>
+      <script type ="text/javascript">
+ 
+      var socketio = io.connect();
+      socketio.on("message_to_client",function(data) {
+         
+         var URL_regex_without_http = /(?:\w+:\w+@)?((?:(?:[-\w\d{1-3}]+\.)+(?:com|org|net|gov|mil|biz|info|mobi|name|aero|jobs|edu|co\.uk|ac\.uk|it|fr|tv|museum|asia|local|travel|[a-z]{2}))|((\b25[0-5]\b|\b[2][0-4][0-9]\b|\b[0-1]?[0-9]?[0-9]\b)(\.(\b25[0-5]\b|\b[2][0-4][0-9]\b|\b[0-1]?[0-9]?[0-9]\b)){3}))(?::[\d]{1,5})?(?:(?:(?:\/(?:[-\w~!$+|.,=]|%[a-f\d]{2})+)+|\/)+|\?|#)?(?:(?:\?(?:[-\w~!$+|.,*:]|%[a-f\d{2}])+=?(?:[-\w~!$+|.,*:=]|%[a-f\d]{2})*)(?:&(?:[-\w~!$+|.,*:]|%[a-f\d{2}])+=?(?:[-\w~!$+|.,*:=]|%[a-f\d]{2})*)*)*(?:#(?:[-\w~!$ |\/.,*:;=]|%[a-f\d]{2})*)?/g
+         //The g at the end of the regex after the last /
+         //var pic_regex = new RegExp(/(https?:\/\/.*\.(?:png|jpg|gif))/);
+         //var pic_regex = new RegExp(/(?:png|jpg|gif)/g);
+         var pic_regex = new RegExp(/([A-Za-z\-_0-9\/\:\.]*\.(jpg|jpeg|png|gif)[A-Za-z\-_0-9\/\:\.?=]*)/g);
+         /*
+          * We received the original regex: /^(?:(?:ht|f)tp(?:s?)\:\/\/|~\/|\/)?(?:\w+:\w+@)?((?:(?:[-\w\d{1-3}]+\.)+(?:com|org|net|gov|mil|biz|info|mobi|name|aero|jobs|edu|co\.uk|ac\.uk|it|fr|tv|museum|asia|local|travel|[a-z]{2}))|((\b25[0-5]\b|\b[2][0-4][0-9]\b|\b[0-1]?[0-9]?[0-9]\b)(\.(\b25[0-5]\b|\b[2][0-4][0-9]\b|\b[0-1]?[0-9]?[0-9]\b)){3}))(?::[\d]{1,5})?(?:(?:(?:\/(?:[-\w~!$+|.,=]|%[a-f\d]{2})+)+|\/)+|\?|#)?(?:(?:\?(?:[-\w~!$+|.,*:]|%[a-f\d{2}])+=?(?:[-\w~!$+|.,*:=]|%[a-f\d]{2})*)(?:&(?:[-\w~!$+|.,*:]|%[a-f\d{2}])+=?(?:[-\w~!$+|.,*:=]|%[a-f\d]{2})*)*)*(?:#(?:[-\w~!$ |\/.,*:;=]|%[a-f\d]{2})*)?$/i
+          * from https://github.com/component/regexps/blob/master/index.js#L3
+          */
+          
+        
+         var messageReceived = String(data['message']);
+         //alert("messageReceived: "+messageReceived);
+         
+         if (pic_regex.test(messageReceived)) {
+            messageReceived = messageReceived.replace(pic_regex, '<img src="$&" alt="Picture not found">');
+            //messageReceived = messageReceived.replace(pic_regex, '[Source was: $&. Image: <img src="$&" alt="Picture not found">]');
+         } else if (URL_regex_without_http.test(messageReceived)) {
+            messageReceived = messageReceived.replace(URL_regex_without_http, '<a href="http://$&">$&</a>');
+         }
+         new_output = document.createElement("output");
+         new_output.innerHTML = messageReceived;
+         
+         //Append an HR thematic break and the escaped HTML of the new message
+         document.getElementById("chatlog").appendChild(document.createElement("br"));
+         document.getElementById("chatlog").appendChild(new_output);
+         
+         //Scroll the chatlog downwards
+         document.getElementById("chatlog").scrollTop = document.getElementById("chatlog").scrollHeight;
+         //scrollTop is where the bar is now
+         //scrollHeight starts at 0 at the top of the chatlog, and grows by 1 as you go downwards.
+         //Setting scrollTop = scrollHeight scrolls the chatlog are far down as possible
+      });
+ 
+      function setupJoiningServer(){
+         socketio.emit("setup",{username: globalUsername});
+      }
+ 
+      function sendMessage(){
+         var msg = document.getElementById("message_input").value;
+         
+         if (msg!="") {
+            //Adding username to message about to be sent:
+            msg = globalUsername+": "+msg;
+            socketio.emit("message_to_server", {message:msg});
+            
+            //Clear the message from the message bar
+            document.getElementById("message_input").value="";
+         }
+         
+      }
+      
+      function createChatroom(){
+            var roomName = document.getElementById("roomNameInput").value;
+            var pass = document.getElementById("newPasswordInput").value;
+            socketio.emit("new_chatroom", {roomname:roomName, password:pass});
+      }
+      
+      function switchChatroom(newRoom){
+         var pass = document.getElementById("chatroomEnterPassword").value;
+         socketio.emit("switch_chatroom", {roomname:newRoom, password:pass});
+      }
+      
+      socketio.on("error_message", function(data){
+         alert(data.message);
+      });
+      
+      socketio.on("chatrooms_updated",function(data){
+         //alert(data);
+         var chatroomArrayNames = data['message'].split("~~~&#");
+         var theMenu = document.getElementById("menu");
+         while (theMenu.firstChild){
+               theMenu.removeChild(theMenu.firstChild);
+         }
+         for (i=0; i<chatroomArrayNames.length; ++i) {
+            newListItem = document.createElement("li");
+            newListItem.textContent = chatroomArrayNames[i];
+            newListItem.setAttribute("id",chatroomArrayNames[i]);
+            newListItem.setAttribute("class","ui-state-disabled");
+            document.getElementById("menu").appendChild(newListItem);
+            newListItem.addEventListener("click", function(){
+               //alert("this.id for this menu item="+this.id);
+               switchChatroom(this.id);
+            }, false);
+         }
+      });
+      
+      socketio.on("usernames_updated",function(data){
+         //alert(data);
+         var usernames = data['message'].split("~~~&#");
+         var theMenu = document.getElementById("menu_2");
+         while (theMenu.firstChild){
+               theMenu.removeChild(theMenu.firstChild);
+         }
+         for (i=0; i<usernames.length; ++i) {
+            newListItem = document.createElement("li");
+            newListItem.textContent = usernames[i];
+            newListItem.setAttribute("id",usernames[i]);
+            newListItem.setAttribute("class","ui-state-disabled");
+            document.getElementById("menu_2").appendChild(newListItem);
+            newListItem.addEventListener("click", function(){
+               //alert("this.id for this menu item="+this.id);
+               targetUser = this.id;
+               document.getElementById("pmMessage").placeholder = "Target: " + targetUser;
+            }, false);
+         }
+      });
+   
+      </script>
+  <style>
+  .ui-menu { width: 150px; }
+  </style>
+      
+      <style type="text/css">
+         body{
+            font-family: Verdana, Geneva, sans-serif;
+            background: linear-gradient(#12453E, #08201E);
+            height: 100%;
+            width: 100%;
+         }
+         #mydialog{
+            display:none;
+         }
+         #loginError{
+            color: #FF0000;
+         }
+         #backgroundBeforeEntering{
+            position: absolute;
+            z-index:1;
+            height: 100%;
+            width: 100%;
+            background-color: #000000;
+         }
+         #borderBox{
+            background-color:#F0FFFF;
+            background: linear-gradient(to right, #12453E, #08201E);
+            height: 525px;
+            width: 835px;
+         }
+        #chatlog{
+            height: 500px;
+            width: 810px;
+            background-color: #FFFFFF;
+            overflow: scroll;
+            word-wrap: break-word;
+        }
+        #message_input{
+            width: 200px;
+            
+        }
+        #send_button{
+            width: 100px;
+        }
+        .background_text{
+            color:#FFFFFF;
+        }
+      </style>
+      <!--Below is importing CSS for jQuery Dialogy Box from Google APIs-->
+      <link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/themes/start/jquery-ui.css"
+   type="text/css" rel="Stylesheet" />
+      <!--Below is the importing jQuery Code-->
+  <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.3/jquery.min.js"></script>
+  <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/jquery-ui.min.js"></script>
+
+  <!--Below is resources for jQuery Menu
+   <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+  <script src="//code.jquery.com/jquery-1.10.2.js"></script>
+  <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+  <link rel="stylesheet" href="/resources/demos/style.css">
+   Below is resources for jQuery Menu -->
+  
+      <title>Chatroom Window</title>
+   </head>
+   <body>
+         <div id="mydialog" title="Welcome">
+            Before entering, please enter a temporary username.<br />
+            <br />
+            <output id="loginError"></output>
+            <input type="text" name="username" id="usernameId" placeholder="Username"/>
+            <button id="enterButton">Enter</button>
+         </div>
+         <div id="backgroundBeforeEntering">Surprise!</div>
+         <div id="borderBox">
+            <div id="chatlog"></div>
+            <input type="text" id="message_input"/>
+            <button id="send_button" onclick="sendMessage()">send</button>
+         </div>
+         <output class="background_text">Click on chatroom to enter.</output>
+         <ul id="menu">
+            <li class="ui-state-disabled">Not Connected to Server</li>
+         </ul>
+         <output class="background_text">To enter a chatroom with a password, enter its password below:</output>
+         <input type="password" id="chatroomEnterPassword" placeholder="Password here"/>
+         <br />
+         <output class="background_text">Click on username for options</output>
+         <ul id="menu_2">
+            <li class="ui-state-disabled">Not Connected to Server</li>
+         </ul>
+         <input type="text" id="pmMessage" placeholder="Message-Select User"/><br />
+         <button id="Send">Just Send</button>
+         <button id="Kick">Kick</button>
+         <button id="Ban">Ban</button>
+         <br /><br />
+         <input type="text" id="roomNameInput" placeholder="Chatroom Name"/>
+         <input type="password" id="newPasswordInput" placeholder="Optional Password"/>
+         <button id="createChatroomButton">Make Chatroom</button><br />
+         <br />
+         
+        
+        <script type="text/javascript">
+         //Global Variables
+         var globalUsername ="";
+         var targetUser = "";
+         
+         function oncePageLoads(){
+            showdialog();
+         }
+         function showdialog(){
+            $("#mydialog").dialog();
+         }
+         function hidedialog(){
+            $("#mydialog").dialog('close');
+         }
+            
+         $(function() {
+            $( "#menu" ).menu();
+         });
+         $(function() {
+            $( "#menu_2" ).menu();
+         });
+         //document.getElementById("message_input").addEventListener()
+         function enterPage(){
+            var usernameInput = document.getElementById("usernameId").value;
+            if (usernameInput=="") {
+               document.getElementById("loginError").textContent = "No blank usernames!";
+            } else {
+               globalUsername = usernameInput;
+               document.getElementById("backgroundBeforeEntering").style.display="none";
+               setupJoiningServer();
+               hidedialog();
+               
+            }
+         }
+         
+         document.getElementById("enterButton").addEventListener("click", enterPage, false);
+         //If you call functionName() in the eventListener, the function is immediately executed.
+         //If you call functionName in the eventListener, the function will only be called when the event happens
+         
+         document.getElementById("Send").addEventListener("click", function(){
+            var msgToSend = document.getElementById("pmMessage").value;
+            if (targetUser!="") {
+               socketio.emit("send_pm", {message: msgToSend, target: targetUser});
+               document.getElementById("pmMessage").value="";
+            } else {
+               alert("Target user is not set!");
+            }            
+         }, false);
+         //Typing ENTER will also send the chatroom message
+         document.getElementById("message_input").addEventListener("keydown", function(e){
+            if (!e) {var e = window.event;}
+            
+            //When ENTER is pressed
+            if (e.keyCode == 13) {sendMessage();}
+         }, false);
+         
+         
+         document.getElementById("Kick").addEventListener("click", function(){
+            var msgToSend = document.getElementById("pmMessage").value;
+            if (targetUser!="") {
+               socketio.emit("kick", {message: msgToSend, target: targetUser});
+               document.getElementById("pmMessage").value="";
+            } else {
+               alert("Target user is not set!");
+            }
+         }, false);
+         document.getElementById("Ban").addEventListener("click", function(){
+            var msgToSend = document.getElementById("pmMessage").value;
+            if (targetUser!="") {
+               socketio.emit("ban", {message: msgToSend, target: targetUser});
+               document.getElementById("pmMessage").value="";
+            } else {
+               alert("Target user is not set!");
+            }
+         }, false);
+         
+         document.getElementById("createChatroomButton").addEventListener("click", createChatroom, false);
+         
+         document.addEventListener("DOMContentLoaded", oncePageLoads, false);
+         
+      </script>
+        
+   </body>
+</html>
