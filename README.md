@@ -1,2 +1,2 @@
-# NodeJs Chatrooms
-This is a chatroom website with multiple possible chatrooms. You can create chatrooms and kick/ban people from chatrooms. Adam Epstein and I created this project for our Rapid Prototype and Development class. The NodeJS server setup is based off of class examples.
+# Node.js Chatrooms
+This is a chatroom website with multiple possible chatrooms. You can create chatrooms and kick/ban people from chatrooms. Adam Epstein and I created this project for our Rapid Prototype and Development class. The Node.js server setup is based off of class examples.
